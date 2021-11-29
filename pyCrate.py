@@ -35,7 +35,18 @@ def charger_niveau(joueur: list, caisses: list, cibles: list, murs: list, path: 
     :param path: chemin du fichier.txt
     :return:
     """
-    pass
+    level = open(path, "r")
+    for y, line in enumerate(level.readlines()):
+        for x, item in enumerate(line):
+            if item == '#':
+                murs.append(creer_mur(x, y))
+            elif item == '.':
+                cibles.append(creer_cible(x, y))
+            elif item == '$':
+                caisses.append(creer_caisse(x, y))
+            elif item == '@':
+                joueur.append(creer_personnage(x, y))
+
 
 
 def definir_mouvement(direction: str, can, joueur: list, murs: list, caisses: list, liste_image: list):

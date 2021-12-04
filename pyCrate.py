@@ -1,6 +1,10 @@
 import time
 
 from fourni import simulateur
+from fourni import personnage as p
+from fourni import caisse as c
+from fourni import case_vide as cv
+from fourni import mur as m
 from outils import \
     creer_image, \
     creer_caisse, creer_case_vide, creer_cible, creer_mur, creer_personnage, \
@@ -9,7 +13,6 @@ from outils import \
 # Constante à utiliser
 
 VALEUR_COUP: int = 50
-
 
 
 # Fonctions à développer
@@ -21,7 +24,16 @@ def jeu_en_cours(caisses: list, cibles: list) -> bool:
     :param cibles: La liste des cibles du niveau en cours
     :return: True si la partie est finie, False sinon
     """
-    pass
+    total_cible_filled: int = 0
+
+    for cible in cibles:
+        for caisse in caisses:
+            total_cible_filled += 1 if est_egal_a(cible, caisse) else 0
+
+    if total_cible_filled == len(cibles):
+        return True
+    else:
+        return False
 
 
 def charger_niveau(joueur: list, caisses: list, cibles: list, murs: list, path: str):
@@ -48,8 +60,7 @@ def charger_niveau(joueur: list, caisses: list, cibles: list, murs: list, path: 
                 joueur.append(creer_personnage(x, y))
 
 
-
-def definir_mouvement(direction: str, can, joueur: list, murs: list, caisses: list, liste_image: list):
+def definir_mouvement(direction: str, can, joueur: list[p.Personnage], murs: list, caisses: list[c.Caisse], liste_image: list):
     """
     Fonction permettant de définir les cases de destinations (il y en a 2 si le joueur pousse une caisse) selon la
     direction choisie.
@@ -61,12 +72,56 @@ def definir_mouvement(direction: str, can, joueur: list, murs: list, caisses: li
     :param liste_image: liste des images (murs, caisses etc...) détaillée dans l'énoncé
     :return:
     """
-    pass
-    
+    # Calculate the new coordinate of the player after the move
+    new_player_position: cv.CaseVide = update_new_coordinate(joueur[0], direction)
 
-def effectuer_mouvement(caisses: list, murs: list, joueur: list, can,
-                        deplace_caisse_x: int, deplace_caisse_y: int, deplace_joueur_x: int, deplace_joueur_y: int,
-                        liste_image: list):
+
+    # Check if there is a crate on the next player position
+    crate_index: int = -1
+    new_crate_position: cv.CaseVide = cv.CaseVide(-1, -1)
+    for i, caisse in enumerate(caisses):
+        if caisse == new_player_position:
+            new_crate_position: cv.CaseVide = update_new_coordinate(caisse, direction)
+            crate_index = i
+            break
+
+    effectuer_mouvement(caisses, murs, joueur, can, new_player_position, liste_image, new_crate_position, crate_index)
+
+
+def update_new_coordinate(_entity: object, _direction) -> cv.CaseVide:
+    # Calculate the new coordinate of the player after the move
+    x: int = _entity.get_x()
+    y: int = _entity.get_y()
+
+    if _direction == 'droite':
+        x += 1
+
+    elif _direction == 'gauche':
+        x -= 1
+
+    elif _direction == 'haut':
+        y -= 1
+
+    elif _direction == 'bas':
+        y += 1
+
+    return creer_case_vide(x, y)
+
+
+def check_next_coordinate(_case_vide: cv.CaseVide, _murs: list[m.Mur], _caisses: list[c.Caisse]) -> bool:
+    for mur in _murs:
+        if _case_vide == mur:
+            return False
+
+    for caisse in _caisses:
+        if _case_vide == caisse:
+            return False
+
+    return True
+
+
+def effectuer_mouvement(caisses: list, murs: list, joueur: list[p.Personnage], can, _new_player_position: cv.CaseVide,
+                        liste_image: list, _new_crate_position: cv.CaseVide = cv.CaseVide(-1, -1), _crate_index: int = -1):
     """
     Fonction permettant d'effectuer le déplacement ou de ne pas l'effectuer si celui-ci n'est pas possible.
     Voir énoncé "Quelques règles".
@@ -75,14 +130,30 @@ def effectuer_mouvement(caisses: list, murs: list, joueur: list, can,
     :param murs: liste des murs
     :param joueur: liste des joueurs
     :param can: Canvas (ignorez son fonctionnement), utile uniquement pour créer_image()
-    :param deplace_caisse_x: coordonnée à laquelle la caisse va être déplacée en x (si le joueur pousse une caisse)
-    :param deplace_caisse_y: coordonnée à laquelle la caisse va être déplacée en y (si le joueur pousse une caisse)
-    :param deplace_joueur_x: coordonnée en x à laquelle le joueur va être après le mouvement
-    :param deplace_joueur_y: coordonnée en y à laquelle le joueur va être après le mouvement
+    :param _new_crate_position: coordonnée à laquelle la caisse va être déplacée (si le joueur pousse une caisse)
+    :param _new_player_position: coordonnée à laquelle le joueur va être déplacée
+    :param _crate_index : index of the crate to push in the crate list
     :param liste_image: liste des images (murs, caisses etc...) détaillée dans l'énoncé
     :return:
     """
-    pass
+    able_to_move: bool = True
+    crate_to_push: bool = _new_crate_position.get_x() != -1
+
+    if crate_to_push:
+        able_to_move = check_next_coordinate(_new_crate_position, murs, caisses)
+    else:
+        able_to_move = check_next_coordinate(_new_player_position, murs, caisses)
+
+    if able_to_move:
+        creer_image(can, joueur[0].get_x(), joueur[0].get_y(), liste_image[6])
+        joueur[0].set_x(_new_player_position.get_x())
+        joueur[0].set_y(_new_player_position.get_y())
+        creer_image(can, joueur[0].get_x(), joueur[0].get_y(), liste_image[4])
+        if crate_to_push:
+            creer_image(can, caisses[_crate_index].get_x(), caisses[_crate_index].get_y(), liste_image[6])
+            caisses[_crate_index].set_x(_new_crate_position.get_x())
+            caisses[_crate_index].set_y(_new_crate_position.get_y())
+            creer_image(can, caisses[_crate_index].get_x(), caisses[_crate_index].get_y(), liste_image[2])
 
 
 
@@ -94,7 +165,6 @@ def chargement_score(scores_file_path: str, dict_scores: dict):
     :return:
     """
     pass
-    
 
 
 def maj_score(niveau_en_cours: int, dict_scores: dict) -> str:
@@ -109,7 +179,6 @@ def maj_score(niveau_en_cours: int, dict_scores: dict) -> str:
     :return str: Le str contenant l'affichage pour les scores ("\n" pour passer à la ligne)
     """
     pass
-    
 
 
 def calcule_score(temps_initial: float, nb_coups: int, score_base: int) -> int:
@@ -121,6 +190,7 @@ def calcule_score(temps_initial: float, nb_coups: int, score_base: int) -> int:
     :return: le score du jouer
     """
     pass
+
 
 def enregistre_score(temps_initial: float, nb_coups: int, score_base: int, dict_scores: dict,
                      niveau_en_cours: int):
@@ -136,8 +206,6 @@ def enregistre_score(temps_initial: float, nb_coups: int, score_base: int, dict_
     :param niveau_en_cours: Le numéro du niveau en cours
     """
     pass
-    
-
 
 
 def update_score_file(scores_file_path: str, dict_scores: dict):
@@ -148,7 +216,6 @@ def update_score_file(scores_file_path: str, dict_scores: dict):
     :return:
     """
     pass
-    
 
 
 if __name__ == '__main__':

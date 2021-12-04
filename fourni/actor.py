@@ -8,3 +8,10 @@ class Actor:
 
     def get_y(self) -> int:
         return self.y
+
+    def set_x(self, _x):
+        self.x = _x
+
+    def set_y(self, _y):
+        self.y = _y
+

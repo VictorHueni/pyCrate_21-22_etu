@@ -195,13 +195,13 @@ def simulate():
 
     # Référence sur les images (obligatoire avec tkinter)
 
-    img_mur: PhotoImage = PhotoImage(file=os.path.abspath("./images/wall.gif"))
-    img_cible: PhotoImage = PhotoImage(file=os.path.abspath("./images/dock.gif"))
-    img_boite: PhotoImage = PhotoImage(file=os.path.abspath("./images/box.gif"))
-    img_boite_correcte: PhotoImage = PhotoImage(file=os.path.abspath("./images/box_docked.gif"))
-    img_joueur: PhotoImage = PhotoImage(file=os.path.abspath("./images/worker.gif"))
-    img_joueur_cible: PhotoImage = PhotoImage(file=os.path.abspath("./images/worker_dock.gif"))
-    img_sol: PhotoImage = PhotoImage(file=os.path.abspath("./images/floor.gif"))
+    img_mur: PhotoImage = PhotoImage(file=os.path.abspath("./images/wall.gif"))                         # 0
+    img_cible: PhotoImage = PhotoImage(file=os.path.abspath("./images/dock.gif"))                       # 1
+    img_boite: PhotoImage = PhotoImage(file=os.path.abspath("./images/box.gif"))                        # 2
+    img_boite_correcte: PhotoImage = PhotoImage(file=os.path.abspath("./images/box_docked.gif"))        # 3
+    img_joueur: PhotoImage = PhotoImage(file=os.path.abspath("./images/worker.gif"))                    # 4
+    img_joueur_cible: PhotoImage = PhotoImage(file=os.path.abspath("./images/worker_dock.gif"))         # 5
+    img_sol: PhotoImage = PhotoImage(file=os.path.abspath("./images/floor.gif"))                        # 6
     can: Canvas = Canvas(fenetre, height=760, width=1000, bg="#fedcb2")
     can.pack(side=LEFT)
     jeu: Jeu = Jeu(can)

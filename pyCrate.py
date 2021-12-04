@@ -164,10 +164,12 @@ def chargement_score(scores_file_path: str, dict_scores: dict):
     :param dict_scores:  le dictionnaire pour le stockage
     :return:
     """
-    pass
+    scores = open(scores_file_path, "r")
+    for x, line in enumerate(scores.readlines()):
+        dict_scores[x+1] = line[2:]
 
 
-def maj_score(niveau_en_cours: int, dict_scores: dict) -> str:
+def maj_score(niveau_en_cours: int, dict_scores: dict[int, str]) -> str:
     """
     Fonction mettant à jour l'affichage des scores en stockant dans un str l'affichage visible
     sur la droite du jeu.
@@ -178,7 +180,10 @@ def maj_score(niveau_en_cours: int, dict_scores: dict) -> str:
     :param dict_scores: le dictionnaire pour stockant les scores
     :return str: Le str contenant l'affichage pour les scores ("\n" pour passer à la ligne)
     """
-    pass
+    scores_str: str = ""
+    scores_list: list[str] = dict_scores[niveau_en_cours].split(';')
+    scores_str = '\n'.join([f'{i}) {score}' for i, score in enumerate(scores_list)])
+    return scores_str
 
 
 def calcule_score(temps_initial: float, nb_coups: int, score_base: int) -> int:

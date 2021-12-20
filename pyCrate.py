@@ -1,5 +1,6 @@
 import time
 
+from fourni import actor as a
 from fourni import simulateur
 from fourni import personnage as p
 from fourni import caisse as c
@@ -8,7 +9,7 @@ from fourni import mur as m
 from outils import \
     creer_image, \
     creer_caisse, creer_case_vide, creer_cible, creer_mur, creer_personnage, \
-    coordonnee_x, coordonnee_y, est_egal_a
+    est_egal_a
 
 # Constante à utiliser
 
@@ -60,7 +61,11 @@ def charger_niveau(joueur: list, caisses: list, cibles: list, murs: list, path: 
                 joueur.append(creer_personnage(x, y))
 
 
-def definir_mouvement(direction: str, can, joueur: list[p.Personnage], murs: list, caisses: list[c.Caisse], liste_image: list):
+def definir_mouvement(direction: str, can,
+                      joueur: list[p.Personnage],
+                      murs: list,
+                      caisses: list[c.Caisse],
+                      liste_image: list):
     """
     Fonction permettant de définir les cases de destinations (il y en a 2 si le joueur pousse une caisse) selon la
     direction choisie.
@@ -75,7 +80,6 @@ def definir_mouvement(direction: str, can, joueur: list[p.Personnage], murs: lis
     # Calculate the new coordinate of the player after the move
     new_player_position: cv.CaseVide = update_new_coordinate(joueur[0], direction)
 
-
     # Check if there is a crate on the next player position
     crate_index: int = -1
     new_crate_position: cv.CaseVide = cv.CaseVide(-1, -1)
@@ -88,7 +92,7 @@ def definir_mouvement(direction: str, can, joueur: list[p.Personnage], murs: lis
     effectuer_mouvement(caisses, murs, joueur, can, new_player_position, liste_image, new_crate_position, crate_index)
 
 
-def update_new_coordinate(_entity: object, _direction) -> cv.CaseVide:
+def update_new_coordinate(_entity: a.Actor, _direction) -> cv.CaseVide:
     # Calculate the new coordinate of the player after the move
     x: int = _entity.get_x()
     y: int = _entity.get_y()
@@ -120,8 +124,14 @@ def check_next_coordinate(_case_vide: cv.CaseVide, _murs: list[m.Mur], _caisses:
     return True
 
 
-def effectuer_mouvement(caisses: list, murs: list, joueur: list[p.Personnage], can, _new_player_position: cv.CaseVide,
-                        liste_image: list, _new_crate_position: cv.CaseVide = cv.CaseVide(-1, -1), _crate_index: int = -1):
+def effectuer_mouvement(caisses: list,
+                        murs: list,
+                        joueur: list[p.Personnage],
+                        can,
+                        _new_player_position: cv.CaseVide,
+                        liste_image: list,
+                        _new_crate_position: cv.CaseVide = cv.CaseVide(-1, -1),
+                        _crate_index: int = -1):
     """
     Fonction permettant d'effectuer le déplacement ou de ne pas l'effectuer si celui-ci n'est pas possible.
     Voir énoncé "Quelques règles".
@@ -136,13 +146,13 @@ def effectuer_mouvement(caisses: list, murs: list, joueur: list[p.Personnage], c
     :param liste_image: liste des images (murs, caisses etc...) détaillée dans l'énoncé
     :return:
     """
-    able_to_move: bool = True
+
     crate_to_push: bool = _new_crate_position.get_x() != -1
 
     if crate_to_push:
-        able_to_move = check_next_coordinate(_new_crate_position, murs, caisses)
+        able_to_move: bool = check_next_coordinate(_new_crate_position, murs, caisses)
     else:
-        able_to_move = check_next_coordinate(_new_player_position, murs, caisses)
+        able_to_move: bool = check_next_coordinate(_new_player_position, murs, caisses)
 
     if able_to_move:
         creer_image(can, joueur[0].get_x(), joueur[0].get_y(), liste_image[6])
@@ -179,9 +189,12 @@ def maj_score(niveau_en_cours: int, dict_scores: dict[int, list[int]]) -> str:
     :param dict_scores: le dictionnaire pour stockant les scores
     :return str: Le str contenant l'affichage pour les scores ("\n" pour passer à la ligne)
     """
-    scores_str: str = ""
-    scores_list: list[int] = dict_scores[niveau_en_cours]
-    scores_str = '\n'.join([f'{i}) {score}' for i, score in enumerate(scores_list)])
+    if niveau_en_cours in dict_scores:
+        scores_list: list[int] = dict_scores[niveau_en_cours]
+        scores_str: str = '\n'.join([f'{i}) {score}' for i, score in enumerate(scores_list)])
+    else:
+        scores_str: str = ""
+
     return scores_str
 
 

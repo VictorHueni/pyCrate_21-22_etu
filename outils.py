@@ -3,9 +3,11 @@ from fourni.case_vide import CaseVide
 from fourni.cible import Cible
 from fourni.mur import Mur
 from fourni.personnage import Personnage
+from fourni.actor import Actor
 
 DISTANCE_ENTRE_CASE: int = 32  # distance par rapport à l'autre case
 X_PREMIERE_CASE: int = 20
+
 
 def creer_image(can, x: int, y: int, image: object):
     """
@@ -16,7 +18,7 @@ def creer_image(can, x: int, y: int, image: object):
     :param image: une image tirée de la liste d'image (voir énoncé pour quelle image choisir via quel index)
     :return:
     """
-    can.create_image(x* DISTANCE_ENTRE_CASE + X_PREMIERE_CASE, y* DISTANCE_ENTRE_CASE + X_PREMIERE_CASE, image=image)
+    can.create_image(x * DISTANCE_ENTRE_CASE + X_PREMIERE_CASE, y * DISTANCE_ENTRE_CASE + X_PREMIERE_CASE, image=image)
 
 
 def creer_mur(x: int, y: int) -> Mur:
@@ -69,7 +71,7 @@ def creer_case_vide(x: int, y: int) -> CaseVide:
     return CaseVide(x, y)
 
 
-def coordonnee_x(variable: object) -> int:
+def coordonnee_x(variable: Actor) -> int:
     """
     Fonction permettant de retourner la coordonnée en x de la variable.
     :param variable: la variable (Personnage,Caisse, CaseVide, Cible, Mur)
@@ -78,7 +80,7 @@ def coordonnee_x(variable: object) -> int:
     return variable.get_x()
 
 
-def coordonnee_y(variable: object) -> int:
+def coordonnee_y(variable: Actor) -> int:
     """
     Fonction permettant de retourner la coordonnée en y de la variable.
     :param variable: la variable (Personnage,Caisse, CaseVide, Cible, Mur)

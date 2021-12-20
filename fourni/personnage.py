@@ -1,6 +1,5 @@
 from .actor import Actor
 
-
 class Personnage(Actor):
     def __init__(self, x: int, y: int):
         super().__init__(x, y)

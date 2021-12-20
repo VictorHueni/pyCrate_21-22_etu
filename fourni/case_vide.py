@@ -1,6 +1,5 @@
 from .actor import Actor
 
-
 class CaseVide(Actor):
     def __init__(self, x: int, y: int):
         super().__init__(x, y)

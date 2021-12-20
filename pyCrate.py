@@ -156,8 +156,7 @@ def effectuer_mouvement(caisses: list, murs: list, joueur: list[p.Personnage], c
             creer_image(can, caisses[_crate_index].get_x(), caisses[_crate_index].get_y(), liste_image[2])
 
 
-
-def chargement_score(scores_file_path: str, dict_scores: dict):
+def chargement_score(scores_file_path: str, dict_scores: dict[int, list[int]]):
     """
     Fonction chargeant les scores depuis un fichier.txt et les stockent dans un dictionnaire
     :param scores_file_path: le chemin d'accès du fichier
@@ -165,11 +164,11 @@ def chargement_score(scores_file_path: str, dict_scores: dict):
     :return:
     """
     scores = open(scores_file_path, "r")
-    for x, line in enumerate(scores.readlines()):
-        dict_scores[x+1] = line[2:]
+    for line in scores.readlines():
+        dict_scores[int(line.split(";")[0])] = [int(x) for x in line[2:].split(';')]
 
 
-def maj_score(niveau_en_cours: int, dict_scores: dict[int, str]) -> str:
+def maj_score(niveau_en_cours: int, dict_scores: dict[int, list[int]]) -> str:
     """
     Fonction mettant à jour l'affichage des scores en stockant dans un str l'affichage visible
     sur la droite du jeu.
@@ -181,7 +180,7 @@ def maj_score(niveau_en_cours: int, dict_scores: dict[int, str]) -> str:
     :return str: Le str contenant l'affichage pour les scores ("\n" pour passer à la ligne)
     """
     scores_str: str = ""
-    scores_list: list[str] = dict_scores[niveau_en_cours].split(';')
+    scores_list: list[int] = dict_scores[niveau_en_cours]
     scores_str = '\n'.join([f'{i}) {score}' for i, score in enumerate(scores_list)])
     return scores_str
 
@@ -194,10 +193,10 @@ def calcule_score(temps_initial: float, nb_coups: int, score_base: int) -> int:
     :param score_base: score de base
     :return: le score du jouer
     """
-    pass
+    return int(score_base - (time.time() - temps_initial) - (nb_coups * VALEUR_COUP))
 
 
-def enregistre_score(temps_initial: float, nb_coups: int, score_base: int, dict_scores: dict,
+def enregistre_score(temps_initial: float, nb_coups: int, score_base: int, dict_scores: dict[int, list[int]],
                      niveau_en_cours: int):
     """
     Fonction enregistrant un nouveau score réalisé par le joueur. Le calcul de score est le suivant :
@@ -210,17 +209,34 @@ def enregistre_score(temps_initial: float, nb_coups: int, score_base: int, dict_
     :param dict_scores: Le dictionnaire stockant les scores
     :param niveau_en_cours: Le numéro du niveau en cours
     """
-    pass
+    current_score: int = calcule_score(temps_initial, nb_coups, score_base)
+    if niveau_en_cours in dict_scores:
+        dict_scores[niveau_en_cours].append(current_score)
+    else:
+        dict_scores[niveau_en_cours] = [current_score]
+    scores_size: int = len(dict_scores[niveau_en_cours])
+    if scores_size > 1:
+        dict_scores[niveau_en_cours].sort(reverse=True)
+        if scores_size > 10:
+            dict_scores[niveau_en_cours].pop()
 
 
-def update_score_file(scores_file_path: str, dict_scores: dict):
+def update_score_file(scores_file_path: str, dict_scores: dict[int, list[int]]):
     """
     Fonction sauvegardant tous les scores dans le fichier.txt.
     :param scores_file_path: le chemin d'accès du fichier de stockage des scores
     :param dict_scores: Le dictionnaire stockant les scores
     :return:
     """
-    pass
+    score_file = open(scores_file_path, "w")
+    score_file.truncate()
+    score_string: list = []
+
+    for key in dict_scores:
+        dict_scores[key].insert(0, key)
+        score_string.append(";".join([str(x) for x in dict_scores[key]]))
+
+    score_file.writelines('\n'.join(score_string) + "\n")
 
 
 if __name__ == '__main__':

@@ -7,17 +7,18 @@ from fourni import caisse as c
 from fourni import case_vide as cv
 from fourni import mur as m
 from outils import \
-    creer_image, \
-    creer_caisse, creer_case_vide, creer_cible, creer_mur, creer_personnage, \
+    creer_image, creer_caisse, \
+    creer_case_vide, creer_cible, \
+    creer_mur, creer_personnage, \
     est_egal_a
 
 # Constante à utiliser
-
 VALEUR_COUP: int = 50
 
 
-# Fonctions à développer
-
+###############################################################################################################
+#       GAMES MANAGEMENT
+###############################################################################################################
 def jeu_en_cours(caisses: list, cibles: list) -> bool:
     """
     Fonction testant si le jeu est encore en cours et retournant un booléen comme réponse sur l'état de la partie.
@@ -27,10 +28,12 @@ def jeu_en_cours(caisses: list, cibles: list) -> bool:
     """
     total_cible_filled: int = 0
 
+    # Check if all crate have the same coordinate as target
     for cible in cibles:
         for caisse in caisses:
             total_cible_filled += 1 if est_egal_a(cible, caisse) else 0
 
+    # All crate on target ?
     if total_cible_filled == len(cibles):
         return True
     else:
@@ -48,8 +51,13 @@ def charger_niveau(joueur: list, caisses: list, cibles: list, murs: list, path: 
     :param path: chemin du fichier.txt
     :return:
     """
+    # Read level file
     level = open(path, "r")
+
+    # For each line in the files
     for y, line in enumerate(level.readlines()):
+
+        # Add element to the correct list according to the symbol
         for x, item in enumerate(line):
             if item == '#':
                 murs.append(creer_mur(x, y))
@@ -61,39 +69,111 @@ def charger_niveau(joueur: list, caisses: list, cibles: list, murs: list, path: 
                 joueur.append(creer_personnage(x, y))
 
 
-def definir_mouvement(direction: str, can,
-                      joueur: list[p.Personnage],
-                      murs: list,
-                      caisses: list[c.Caisse],
-                      liste_image: list):
+###############################################################################################################
+#       MOVES MANAGEMENT
+###############################################################################################################
+def definir_mouvement(_direction: str,
+                      _can,
+                      _joueurs: list[p.Personnage],
+                      _murs: list,
+                      _caisses: list[c.Caisse],
+                      _liste_image: list):
     """
-    Fonction permettant de définir les cases de destinations (il y en a 2 si le joueur pousse une caisse) selon la
-    direction choisie.
-    :param direction: Direction dans laquelle le joueur se déplace (droite, gauche, haut, bas)
-    :param can: Canvas (ignorez son fonctionnement), utile uniquement pour créer_image()
-    :param joueur: liste des joueurs
-    :param murs: liste des murs
-    :param caisses: liste des caisses
-    :param liste_image: liste des images (murs, caisses etc...) détaillée dans l'énoncé
-    :return:
+    Cette fonction permet de savoir si le mouvement souhaité est possible (pas d'élément bloquant (deuxième caisse
+    ou mur sur la prochaine posision
+    Elle permet de définir quelles entités doivent êtres bouger en fonction du mouvement. Il peux y avoir deux entités
+    (le joueur + une caisse)
+    :param _direction: Direction dans laquelle le joueur se déplace (droite, gauche, haut, bas)
+    :param _can: Canvas (ignorez son fonctionnement), utile uniquement pour créer_image()
+    :param _joueurs: liste des joueurs
+    :param _murs: liste des murs
+    :param _caisses: liste des caisses
+    :param _liste_image: liste des images (murs, caisses etc...) détaillée dans l'énoncé
+    :return: none
     """
     # Calculate the new coordinate of the player after the move
-    new_player_position: cv.CaseVide = update_new_coordinate(joueur[0], direction)
+    new_player_position: cv.CaseVide = generate_new_coordinates(_joueurs[0], _direction)
 
-    # Check if there is a crate on the next player position
-    crate_index: int = -1
-    new_crate_position: cv.CaseVide = cv.CaseVide(-1, -1)
-    for i, caisse in enumerate(caisses):
-        if caisse == new_player_position:
-            new_crate_position: cv.CaseVide = update_new_coordinate(caisse, direction)
-            crate_index = i
-            break
+    # is there a wall on this next position
+    if not wall_on_next_coordinate(new_player_position, _murs):
 
-    effectuer_mouvement(caisses, murs, joueur, can, new_player_position, liste_image, new_crate_position, crate_index)
+        # is there no crate to push  on this next position
+        idx_pushed: int = crate_on_next_coordinate(new_player_position, _caisses)
+        if not idx_pushed > -1:
+
+            # -----------------------------------------
+            #   MOVE PLAYER ONLY
+            # -----------------------------------------
+
+            # with no crate no wall on the next position, my player can be moved
+            # update_player_coordinate
+            effectuer_mouvement(new_player_position, _joueurs, 0, _liste_image[4], _liste_image[6], _can)
+
+        else:
+
+            # Being here mean that there is a crate to push
+            # Calculate the new coordinate of the crate that will be pushed by the player after the move
+            # This is the new player position updated from 1 step towards the move direction
+            # Two position away from the current player position
+            new_crate_position: cv.CaseVide = generate_new_coordinates(new_player_position, _direction)
+
+            # is there a wall right behind the crate to push
+            if not wall_on_next_coordinate(new_crate_position, _murs):
+
+                # is there a second crate right behind the first one to push
+                idx_blocker: int = crate_on_next_coordinate(new_crate_position, _caisses)
+                if not idx_blocker > -1:
+
+                    # -----------------------------------------
+                    #   MOVE PLAYER AND PUSH A CRATE
+                    # -----------------------------------------
+
+                    # if there is no crate, my player can push the crate on her next position
+                    # both can move without problem
+                    # update_crate_coordinate
+                    effectuer_mouvement(new_crate_position, _caisses, idx_pushed, _liste_image[2], _liste_image[6],
+                                        _can)
+                    # update_player_coordinate
+                    effectuer_mouvement(new_player_position, _joueurs, 0, _liste_image[4], _liste_image[6],
+                                        _can)
 
 
-def update_new_coordinate(_entity: a.Actor, _direction) -> cv.CaseVide:
-    # Calculate the new coordinate of the player after the move
+def effectuer_mouvement(_next_position: cv.CaseVide,
+                        _entities: list[a.Actor],
+                        _entity_idx: int,
+                        _entity_image,
+                        _floor_image,
+                        _can):
+    """"
+    Cette fonction remplace l'image aux anciennes coordonnées de l'entité en mouvement par une image de sol vide
+    Elle met également à jour les coordonnées de l'entité avec sa nouvelle position dans la liste correspondantes
+    Enfin elle remplace l'image aux nouvelle coordonnées par l'image de l'entité
+    :param _next_position: Case vide avec les nouvelles coordonnées de l'entité
+    :param _entities: List contenant l'entité à bouger
+    :param _entity_idx: Index de l'entité à bouger dans la liste
+    :param _entity_image: Image de l'entité
+    :param _floor_image: Image de sol vide
+    :return: none
+    """
+
+    # Update old position with floor images
+    creer_image(_can, _entities[_entity_idx].get_x(), _entities[_entity_idx].get_y(), _floor_image)
+
+    # Update coordinates
+    _entities[_entity_idx].set_x(_next_position.get_x())
+    _entities[_entity_idx].set_y(_next_position.get_y())
+
+    # Update new position with entity image
+    creer_image(_can, _entities[_entity_idx].get_x(), _entities[_entity_idx].get_y(), _entity_image)
+
+
+def generate_new_coordinates(_entity: a.Actor, _direction) -> cv.CaseVide:
+    """
+    Calculate the new coordinate of the entity (crate / player) after the move
+    :param _entity: Entity to update
+    :param _direction: Up, Down, Left, Right
+    :return: CaseVide - Used to check if this position is free
+    """
     x: int = _entity.get_x()
     y: int = _entity.get_y()
 
@@ -112,60 +192,38 @@ def update_new_coordinate(_entity: a.Actor, _direction) -> cv.CaseVide:
     return creer_case_vide(x, y)
 
 
-def check_next_coordinate(_case_vide: cv.CaseVide, _murs: list[m.Mur], _caisses: list[c.Caisse]) -> bool:
+def wall_on_next_coordinate(_case_vide: cv.CaseVide, _murs: list[m.Mur]) -> bool:
+    """
+    Check if the next move will be on a wall
+    :param: _case_vide: Entity with the new coordinates
+    :param: _murs: Wall List
+    :return: True -> There is a wall on the next coordinates // False There isn't any wall on the next position
+    """
     for mur in _murs:
         if _case_vide == mur:
-            return False
+            return True
 
-    for caisse in _caisses:
+    return False
+
+
+def crate_on_next_coordinate(_case_vide: cv.CaseVide, _caisses: list[c.Caisse]) -> int:
+    """
+    Check if the next move will be on a crate
+    :param: _case_vide: Entity with the new coordinates
+    :param: _caisses - Crates List
+    :return: -1 -> There is no crate on the next coordinates // >-1 There is a crate on the next position
+                                                                    Index from the list returned
+    """
+    for i, caisse in enumerate(_caisses):
         if _case_vide == caisse:
-            return False
+            return i
 
-    return True
-
-
-def effectuer_mouvement(caisses: list,
-                        murs: list,
-                        joueur: list[p.Personnage],
-                        can,
-                        _new_player_position: cv.CaseVide,
-                        liste_image: list,
-                        _new_crate_position: cv.CaseVide = cv.CaseVide(-1, -1),
-                        _crate_index: int = -1):
-    """
-    Fonction permettant d'effectuer le déplacement ou de ne pas l'effectuer si celui-ci n'est pas possible.
-    Voir énoncé "Quelques règles".
-    Cette methode est appelée par mouvement.
-    :param caisses: liste des caisses
-    :param murs: liste des murs
-    :param joueur: liste des joueurs
-    :param can: Canvas (ignorez son fonctionnement), utile uniquement pour créer_image()
-    :param _new_crate_position: coordonnée à laquelle la caisse va être déplacée (si le joueur pousse une caisse)
-    :param _new_player_position: coordonnée à laquelle le joueur va être déplacée
-    :param _crate_index : index of the crate to push in the crate list
-    :param liste_image: liste des images (murs, caisses etc...) détaillée dans l'énoncé
-    :return:
-    """
-
-    crate_to_push: bool = _new_crate_position.get_x() != -1
-
-    if crate_to_push:
-        able_to_move: bool = check_next_coordinate(_new_crate_position, murs, caisses)
-    else:
-        able_to_move: bool = check_next_coordinate(_new_player_position, murs, caisses)
-
-    if able_to_move:
-        creer_image(can, joueur[0].get_x(), joueur[0].get_y(), liste_image[6])
-        joueur[0].set_x(_new_player_position.get_x())
-        joueur[0].set_y(_new_player_position.get_y())
-        creer_image(can, joueur[0].get_x(), joueur[0].get_y(), liste_image[4])
-        if crate_to_push:
-            creer_image(can, caisses[_crate_index].get_x(), caisses[_crate_index].get_y(), liste_image[6])
-            caisses[_crate_index].set_x(_new_crate_position.get_x())
-            caisses[_crate_index].set_y(_new_crate_position.get_y())
-            creer_image(can, caisses[_crate_index].get_x(), caisses[_crate_index].get_y(), liste_image[2])
+    return -1
 
 
+###############################################################################################################
+#       SCORES MANAGEMENT
+################################################################################################################
 def chargement_score(scores_file_path: str, dict_scores: dict[int, list[int]]):
     """
     Fonction chargeant les scores depuis un fichier.txt et les stockent dans un dictionnaire
@@ -191,9 +249,10 @@ def maj_score(niveau_en_cours: int, dict_scores: dict[int, list[int]]) -> str:
     """
     if niveau_en_cours in dict_scores:
         scores_list: list[int] = dict_scores[niveau_en_cours]
-        scores_str: str = '\n'.join([f'{i}) {score}' for i, score in enumerate(scores_list)])
+        scores_str: str = f'Niveau {niveau_en_cours}\n' + '\n'.join(
+            [f'{i + 1}) {score}' for i, score in enumerate(scores_list)])
     else:
-        scores_str: str = ""
+        scores_str: str = "Personne n'a encore joué à ce niveau !"
 
     return scores_str
 
